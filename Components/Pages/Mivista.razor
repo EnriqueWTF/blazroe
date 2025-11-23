@@ -137,11 +137,20 @@ else
         facturaActual.Articulos.Remove(item);
     }
 
-    private void GuardarFactura()
+    private async Task GuardarFactura()
     {
         if (!string.IsNullOrWhiteSpace(facturaActual.NombreCliente) && facturaActual.Articulos.Any())
         {
-            facturasGuardadas.Add(facturaActual);
+          
+            Contexto.Facturas.Add(facturaActual);
+
+            await Contexto.SaveChangesAsync();
+
+           
+            facturasGuardadas = await Contexto.Facturas
+                                              .Include(f => f.Articulos)
+                                              .ToListAsync();
+
             facturaActual = new Factura();
         }
     }
