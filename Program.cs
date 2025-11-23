@@ -1,13 +1,17 @@
 using blazroe.Components;
-
+using Microsoft.EntityFrameworkCore;
+using blazroe.Components.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-var app = builder.Build();
 
+var connectionString = "Data Source=facturas.db";
+builder.Services.AddDbContext<FacturaContexto>(options =>
+    options.UseSqlite(connectionString));
+var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -21,7 +25,7 @@ app.UseHttpsRedirection();
 
 app.UseAntiforgery();
 
-app.MapStaticAssets();
+app.UseStaticFiles();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
