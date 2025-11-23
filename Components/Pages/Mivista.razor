@@ -1,67 +1,130 @@
 ﻿@page "/Factura"
 @rendermode InteractiveServer
-
 @using blazroe.Components.Data
 
-<input @bind="facturaActual.NombreCliente" placeholder="Nombre Cliente" />
+<h3>Nueva Factura</h3>
 
+¿
+<div style="margin-bottom: 15px;">
+    <label>Cliente:</label>
+    <input @bind="facturaActual.NombreCliente" placeholder="Nombre Cliente" class="form-control" style="width: 300px; display:inline-block;" />
 
-<input type="date" @bind="facturaActual.Fecha" />
+    <label>Fecha:</label>
+    <input type="date" @bind="facturaActual.Fecha" class="form-control" style="width: 200px; display:inline-block;" />
+</div>
 
-<input @bind="articuloActual.Nombre" placeholder="Nombre Artículo" />
-
-
-<input type="number" @bind="articuloActual.Precio" placeholder="Precio" />
-
-
-<button @onclick="AgregarArticulo">Agregar Artículo</button>
-
-<hr>
-
-<h3>Factura Actual</h3>
-@foreach (var item in facturaActual.Articulos)
-{
-    <p>@item.Nombre - @item.Precio.ToString("C")</p>
-}
-
-<p><strong>TOTAL: @facturaActual.Total.ToString("C")</strong></p>
-
-
-<button @onclick="GuardarFactura">Guardar Factura</button>
+<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
+    <h4>Agregar Artículo</h4>
+    <input @bind="articuloActual.Nombre" placeholder="Nombre Artículo" />
+    <input type="number" @bind="articuloActual.Precio" placeholder="Precio" />
+    <button class="btn btn-primary" @onclick="AgregarArticulo">Agregar Artículo</button>
+</div>
 
 <hr>
 
-<h3>Facturas Guardadas</h3>
-@foreach (var fac in facturasGuardadas)
+¿
+<h3>Detalle Factura Actual</h3>
+
+@if (facturaActual.Articulos.Any())
 {
-  
-        <p>Cliente: @fac.NombreCliente</p>
-        <p>Fecha: @fac.Fecha.ToShortDateString()</p>
-        <p>Total: @fac.Total.ToString("C")</p>
-   
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Artículo</th>
+                <th>Precio</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in facturaActual.Articulos)
+            {
+                <tr>
+                    <td>@item.Nombre</td>
+                    <td>@item.Precio.ToString("C")</td>
+                    <td>
+           ¿
+                        <button class="btn btn-sm btn-warning" @onclick="() => EditarArticulo(item)">
+                            Editar
+                        </button>
+
+                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarArticulo(item)">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="text-end">
+        <strong>TOTAL A PAGAR: @facturaActual.Total.ToString("C")</strong>
+    </p>
+
+    <button class="btn btn-success" @onclick="GuardarFactura">Terminar y Guardar Factura</button>
+}
+else
+{
+    <p><em>No hay artículos agregados a esta factura aún.</em></p>
 }
 
+<hr>
 
+<h3>Historial de Facturas Guardadas</h3>
 
-
-
-
+@if (facturasGuardadas.Any())
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fac in facturasGuardadas)
+            {
+                <tr>
+                    <td>@fac.NombreCliente</td>
+                    <td>@fac.Fecha.ToShortDateString()</td>
+                    <td>@fac.Total.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No hay facturas guardadas en memoria.</p>
+}
 
 @code {
 
     private List<Factura> facturasGuardadas = new List<Factura>();
+
     private Factura facturaActual = new();
     private Articulo articuloActual = new();
-
-  
 
     private void AgregarArticulo()
     {
         if (!string.IsNullOrWhiteSpace(articuloActual.Nombre) && articuloActual.Precio > 0)
         {
+
             facturaActual.Articulos.Add(articuloActual);
             articuloActual = new Articulo();
         }
+    }
+
+    private void EditarArticulo(Articulo item)
+    {
+        articuloActual.Nombre = item.Nombre;
+        articuloActual.Precio = item.Precio;
+        facturaActual.Articulos.Remove(item);
+    }
+
+    private void EliminarArticulo(Articulo item)
+    {
+        facturaActual.Articulos.Remove(item);
     }
 
     private void GuardarFactura()

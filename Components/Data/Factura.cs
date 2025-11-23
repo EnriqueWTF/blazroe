@@ -17,4 +17,4 @@ namespace blazroe.Components.Data
 
         public decimal Total => Articulos.Sum(articulo => articulo.Precio);
     }
-}
+}   
