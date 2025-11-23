@@ -1,6 +1,8 @@
 ﻿@page "/Factura"
 @rendermode InteractiveServer
 @using blazroe.Components.Data
+@using Microsoft.EntityFrameworkCore
+@inject FacturaContexto Contexto
 
 <h3>Nueva Factura</h3>
 
@@ -22,7 +24,7 @@
 
 <hr>
 
-¿
+
 <h3>Detalle Factura Actual</h3>
 
 @if (facturaActual.Articulos.Any())
@@ -101,6 +103,14 @@ else
 @code {
 
     private List<Factura> facturasGuardadas = new List<Factura>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        facturasGuardadas = await Contexto.Facturas
+                                          .Include(f => f.Articulos)
+                                          .ToListAsync();
+    }
 
     private Factura facturaActual = new();
     private Articulo articuloActual = new();
