@@ -3,115 +3,196 @@
 @using blazroe.Components.Data
 @using Microsoft.EntityFrameworkCore
 @inject FacturaContexto Contexto
+@inject NavigationManager NavManager
 
-<h3>Nueva Factura</h3>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
-¿
-<div style="margin-bottom: 15px;">
-    <label>Cliente:</label>
-    <input @bind="facturaActual.NombreCliente" placeholder="Nombre Cliente" class="form-control" style="width: 300px; display:inline-block;" />
-
-    <label>Fecha:</label>
-    <input type="date" @bind="facturaActual.Fecha" class="form-control" style="width: 200px; display:inline-block;" />
-</div>
-
-<div style="margin-bottom: 15px; padding: 10px; border: 1px solid #ccc; background-color: #f9f9f9;">
-    <h4>Agregar Artículo</h4>
-    <input @bind="articuloActual.Nombre" placeholder="Nombre Artículo" />
-    <input type="number" @bind="articuloActual.Precio" placeholder="Precio" />
-    <button class="btn btn-primary" @onclick="AgregarArticulo">Agregar Artículo</button>
-</div>
-
-<hr>
-
-
-<h3>Detalle Factura Actual</h3>
-
-@if (facturaActual.Articulos.Any())
-{
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Artículo</th>
-                <th>Precio</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var item in facturaActual.Articulos)
-            {
-                <tr>
-                    <td>@item.Nombre</td>
-                    <td>@item.Precio.ToString("C")</td>
-                    <td>
-           ¿
-                        <button class="btn btn-sm btn-warning" @onclick="() => EditarArticulo(item)">
-                            Editar
-                        </button>
-
-                        <button class="btn btn-sm btn-danger" @onclick="() => EliminarArticulo(item)">
-                            Eliminar
-                        </button>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <p class="text-end">
-        <strong>TOTAL A PAGAR: @facturaActual.Total.ToString("C")</strong>
-    </p>
-
-    <button class="btn btn-success" @onclick="GuardarFactura">Terminar y Guardar Factura</button>
-}
-else
-{
-    <p><em>No hay artículos agregados a esta factura aún.</em></p>
-}
-
-<hr>
-
-<h3>Historial de Facturas Guardadas</h3>
-
-@if (facturasGuardadas.Any())
-{
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Fecha</th>
-                <th>Total</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var fac in facturasGuardadas)
-            {
-                <tr>
-                    <td>@fac.NombreCliente</td>
-                    <td>@fac.Fecha.ToShortDateString()</td>
-                    <td>@fac.Total.ToString("C")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-else
-{
-    <p>No hay facturas guardadas en memoria.</p>
-}
-
-@code {
-
-    private List<Factura> facturasGuardadas = new List<Factura>();
-
-    protected override async Task OnInitializedAsync()
-    {
-
-        facturasGuardadas = await Contexto.Facturas
-                                          .Include(f => f.Articulos)
-                                          .ToListAsync();
+<style>
+    .editor-panel {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        padding: 2rem;
+        height: 100%;
     }
 
+  
+    .receipt-preview {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        font-family: 'Space Mono', monospace; 
+        padding: 2rem;
+        position: relative;
+        border-radius: 5px;
+    }
+
+        .receipt-preview::before, .receipt-preview::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 10px;
+            background-size: 20px 20px;
+        }
+
+        .receipt-preview::before {
+            top: -10px;
+            background-image: linear-gradient(135deg, #fff 10px, transparent 0), linear-gradient(-135deg, #fff 10px, transparent 0);
+        }
+
+        .receipt-preview::after {
+            bottom: -10px;
+            background-image: linear-gradient(135deg, transparent 10px, #fff 0), linear-gradient(-135deg, transparent 10px, #fff 0);
+            background-position: bottom;
+        }
+
+    .form-control-modern {
+        background-color: #f3f4f6;
+        border: none;
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-weight: 500;
+    }
+
+        .form-control-modern:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            outline: none;
+        }
+</style>
+
+<div class="container mt-4">
+  
+    <div class="mb-4">
+        <button class="btn btn-link text-decoration-none text-muted p-0" @onclick="IrAHistorial">
+            <i class="bi bi-arrow-left me-1"></i> Volver al Historial
+        </button>
+    </div>
+
+    <div class="row align-items-start">
+
+    
+        <div class="col-lg-5 mb-4">
+            <div class="editor-panel">
+                <h3 class="fw-bolder text-dark mb-4">Nueva Venta</h3>
+
+        
+                <div class="mb-4">
+                    <label class="text-uppercase small text-muted fw-bold mb-2">Cliente</label>
+                    <input @bind="facturaActual.NombreCliente" class="form-control form-control-modern" placeholder="Nombre del cliente..." />
+                </div>
+
+      
+                <div class="mb-4">
+                   <label class="text-uppercase small text-muted fw-bold mb-2">Fecha</label>
+                    <input type="date" @bind="facturaActual.Fecha" class="form-control form-control-modern" />
+                </div>
+
+                <hr class="my-4 opacity-25">
+
+           
+                <h5 class="fw-bold mb-3">Agregar Producto</h5>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <input @bind="articuloActual.Nombre" class="form-control form-control-modern" placeholder="Descripción..." />
+                    </div>
+                    <div class="col-4">
+                     <div class="input-group">
+                      <span class="input-group-text border-0 bg-light fw-bold">$</span>
+                     <input type="number" @bind="articuloActual.Precio" class="form-control form-control-modern" placeholder="0" />
+                     </div>
+                    </div>
+                </div>
+
+                <button class="btn btn-dark w-100 py-2 rounded-3 fw-bold shadow-sm" @onclick="AgregarArticulo">
+                    <i class="bi bi-plus-circle me-2"></i> Agregar Ítem
+                </button>
+            </div>
+        </div>
+
+     
+        <div class="col-lg-7">
+         
+            <div class="receipt-preview mx-auto" style="max-width: 480px;">
+
+              
+                <div class="text-center mb-4">
+                    <div class="mb-2">
+                        <i class="bi bi-shop fs-1 text-dark"></i>
+                    </div>
+                    <h4 class="fw-bold text-uppercase m-0">Mi Negocio S.A.</h4>
+                    <p class="small text-muted m-0">RFC: GEN010101ABC</p>
+                    <p class="small text-muted">Los Mochis, Sinaloa</p>
+                </div>
+
+                <div class="border-top border-bottom py-2 my-3 border-dark border-opacity-25 d-flex justify-content-between small">
+                    <span>FECHA: @facturaActual.Fecha.ToShortDateString()</span>
+                    <span>CTE: @(string.IsNullOrEmpty(facturaActual.NombreCliente) ? "---" : facturaActual.NombreCliente)</span>
+                </div>
+
+      
+                <table class="table table-borderless table-sm small mb-4">
+                    <thead>
+                        <tr class="border-bottom border-dark">
+                            <th>DESC</th>
+                            <th class="text-end">IMPORTE</th>
+                            <th class="text-end" style="width: 30px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (facturaActual.Articulos.Any())
+                        {
+                            foreach (var item in facturaActual.Articulos)
+                            {
+                                <tr>
+                                    <td class="text-uppercase">@item.Nombre</td>
+                                    <td class="text-end">@item.Precio.ToString("N2")</td>
+                                    <td class="text-end">
+                                  
+                                        <a href="javascript:void(0)" class="text-danger text-decoration-none fw-bold" @onclick="() => EliminarArticulo(item)">x</a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="3" class="text-center text-muted fst-italic py-4">- Carrito Vacío -</td></tr>
+                        }
+                    </tbody>
+                    <tfoot class="border-top border-dark fw-bold">
+                        <tr>
+                            <td class="pt-3 fs-5">TOTAL</td>
+                            <td class="text-end pt-3 fs-4">@facturaActual.Total.ToString("C")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+              
+                <div class="text-center mt-5">
+                    @if (facturaActual.Articulos.Any() && !string.IsNullOrWhiteSpace(facturaActual.NombreCliente))
+                    {
+                        <button class="btn btn-primary w-100 py-3 rounded-0 text-uppercase fw-bold ls-1 shadow" @onclick="GuardarFactura">
+                            <i class="bi bi-printer-fill me-2"></i> Confirmar y Guardar
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary w-100 py-3 rounded-0 text-uppercase fw-bold opacity-50" disabled>
+                            Complete los datos
+                        </button>
+                    }
+                    <p class="mt-3 small text-muted mb-0">Gracias por su compra</p>
+                    <p class="small text-muted">*** COPIA CLIENTE ***</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
     private Factura facturaActual = new();
     private Articulo articuloActual = new();
 
@@ -119,17 +200,9 @@ else
     {
         if (!string.IsNullOrWhiteSpace(articuloActual.Nombre) && articuloActual.Precio > 0)
         {
-
             facturaActual.Articulos.Add(articuloActual);
-            articuloActual = new Articulo();
+            articuloActual = new Articulo(); 
         }
-    }
-
-    private void EditarArticulo(Articulo item)
-    {
-        articuloActual.Nombre = item.Nombre;
-        articuloActual.Precio = item.Precio;
-        facturaActual.Articulos.Remove(item);
     }
 
     private void EliminarArticulo(Articulo item)
@@ -141,17 +214,20 @@ else
     {
         if (!string.IsNullOrWhiteSpace(facturaActual.NombreCliente) && facturaActual.Articulos.Any())
         {
-          
+         
             Contexto.Facturas.Add(facturaActual);
-
             await Contexto.SaveChangesAsync();
 
-           
-            facturasGuardadas = await Contexto.Facturas
-                                              .Include(f => f.Articulos)
-                                              .ToListAsync();
 
             facturaActual = new Factura();
+
+     
+            NavManager.NavigateTo("/historial");
         }
+    }
+
+    private void IrAHistorial()
+    {
+        NavManager.NavigateTo("/historial");
     }
 }
