@@ -1,5 +1,60 @@
-﻿<h3>Historial</h3>
+﻿@page "/historial"
+@rendermode InteractiveServer
+@using blazroe.Components.Data
+@using Microsoft.EntityFrameworkCore
+@inject FacturaContexto Contexto
+@inject NavigationManager NavManager
+
+<h3>Historial de Ventas (Modo Lógica)</h3>
+
+<div style="margin-bottom: 20px;">
+    <button @onclick="IrACrear">Crear Nueva Factura</button>
+</div>
+
+@if (facturasGuardadas.Any())
+{
+    <table border="1" cellpadding="10">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var fac in facturasGuardadas)
+            {
+                <tr>
+                    <td>@fac.Id</td>
+                    <td>@fac.NombreCliente</td>
+                    <td>@fac.Fecha.ToShortDateString()</td>
+                    <td>@fac.Total.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Cargando datos o lista vacía...</p>
+}
 
 @code {
+    private List<Factura> facturasGuardadas = new List<Factura>();
 
+    
+    protected override async Task OnInitializedAsync()
+    {
+        facturasGuardadas = await Contexto.Facturas
+                                          .Include(f => f.Articulos) 
+                                          .OrderByDescending(f => f.Id)
+                                          .ToListAsync();
+    }
+
+    
+    private void IrACrear()
+    {
+        NavManager.NavigateTo("/Factura");
+    }
 }
