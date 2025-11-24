@@ -5,8 +5,10 @@
 @inject FacturaContexto Contexto
 @inject NavigationManager NavManager
 
+
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
 
 <style>
     body {
@@ -26,7 +28,7 @@
     }
 
         .stat-card:hover {
-            transform: translateY(-5px); 
+            transform: translateY(-5px);
         }
 
     .btn-create {
@@ -35,22 +37,31 @@
         border: none;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
+
+    .status-pill {
+        background-color: #d1fae5;
+        color: #065f46;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
 </style>
 
 <div class="container mt-5">
 
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Dashboard de Ventas</h2>
-            <p class="text-muted">Resumen general</p>
+            <h2 class="fw-bold text-dark mb-0">Ventas</h2>
+            <p class="text-muted">Resumen general de las operaciones</p>
         </div>
         <button class="btn btn-create px-4 py-2 rounded-pill" @onclick="IrACrear">
             <i class="bi bi-plus-lg me-2"></i> Nueva Factura
         </button>
     </div>
 
-   
-    <div class="row g-4 mb-5">
+    
+    <div class="row g-4 mb-4">
         <div class="col-md-4">
             <div class="glass-card p-4 stat-card border-start border-4 border-primary">
                 <p class="text-muted small text-uppercase mb-1 fw-bold">Ingresos Totales</p>
@@ -73,7 +84,42 @@
         </div>
     </div>
 
-   
+ 
+    <div class="row g-3 mb-5">
+      
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100" style="background: #fff0f3;">
+           
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-heart-fill text-danger me-2"></i>
+                        <small class="text-muted fw-bold">MÁS VENDIDO</small>
+                    </div>
+                    <h6 class="fw-bold text-dark">@ArticuloMasVendido</h6>
+                </div>
+            </div>
+        </div>
+
+     
+      
+
+      
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <small class="text-muted d-block fw-bold">ITEMS VENDIDOS</small>
+                        <span class="fs-5 fw-bold">@TotalArticulosVendidos</span>
+                    </div>
+                    <div class="text-end border-start ps-3">
+                        <small class="text-muted d-block fw-bold">ÚLTIMA ACT.</small>
+                        <span class="text-success fw-bold small">@UltimaVenta</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="glass-card overflow-hidden">
         <div class="p-4 border-bottom bg-white">
             <h5 class="fw-bold m-0">Transacciones Recientes</h5>
@@ -88,6 +134,7 @@
                             <th class="ps-4 py-3">ID</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
+                            <th class="text-center">Estado</th>
                             <th class="text-end pe-4">Monto</th>
                         </tr>
                     </thead>
@@ -96,8 +143,16 @@
                         {
                             <tr>
                                 <td class="ps-4 fw-bold text-muted">#@fac.Id.ToString("D4")</td>
-                                <td class="fw-bold text-dark">@fac.NombreCliente</td>
+                                <td class="fw-bold text-dark">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width:32px; height:32px; font-size:0.8rem;">
+                                            @fac.NombreCliente.Substring(0, 1).ToUpper()
+                                        </div>
+                                        @fac.NombreCliente
+                                    </div>
+                                </td>
                                 <td class="text-muted">@fac.Fecha.ToShortDateString()</td>
+                                <td class="text-center"><span class="status-pill">Pagada</span></td>
                                 <td class="text-end pe-4 fw-bold text-success">@fac.Total.ToString("C")</td>
                             </tr>
                         }
@@ -108,7 +163,7 @@
             {
                 <div class="p-5 text-center text-muted">
                     <i class="bi bi-inbox fs-1 mb-3 d-block opacity-25"></i>
-                    Sin datos aún.
+                    Sin datos aún. Crea una factura para empezar.
                 </div>
             }
         </div>
@@ -118,12 +173,61 @@
 @code {
     private List<Factura> facturasGuardadas = new List<Factura>();
 
+    
+    private string ArticuloMasVendido = "---";
+    private string ArticuloMasCostoso = "---";
+    private decimal PrecioMasAlto = 0;
+    private string MejorCliente = "---";
+    private int TotalArticulosVendidos = 0;
+    private string UltimaVenta = "---";
+
     protected override async Task OnInitializedAsync()
     {
+       
         facturasGuardadas = await Contexto.Facturas
                                           .Include(f => f.Articulos)
                                           .OrderByDescending(f => f.Id)
                                           .ToListAsync();
+
+      
+        CalcularEstadisticas();
+    }
+
+    private void CalcularEstadisticas()
+    {
+        if (facturasGuardadas.Any())
+        {
+         
+            var todosLosArticulos = facturasGuardadas.SelectMany(f => f.Articulos).ToList();
+            TotalArticulosVendidos = todosLosArticulos.Count;
+
+            if (todosLosArticulos.Any())
+            {
+           
+                var artCaro = todosLosArticulos.OrderByDescending(a => a.Precio).First();
+                ArticuloMasCostoso = artCaro.Nombre;
+                PrecioMasAlto = artCaro.Precio;
+
+         
+                var artPopular = todosLosArticulos.GroupBy(a => a.Nombre)
+                                                  .OrderByDescending(grupo => grupo.Count())
+                                                  .FirstOrDefault();
+                if (artPopular != null)
+                {
+                    ArticuloMasVendido = $"{artPopular.Key}";
+                }
+            }
+
+           
+            var clienteTop = facturasGuardadas.GroupBy(f => f.NombreCliente)
+                                              .OrderByDescending(grupo => grupo.Count())
+                                              .First();
+            MejorCliente = $"{clienteTop.Key} ({clienteTop.Count()})";
+
+       
+            var dias = (DateTime.Now - facturasGuardadas.First().Fecha).Days;
+            UltimaVenta = dias == 0 ? "Hoy" : $"Hace {dias} días";
+        }
     }
 
     private void IrACrear()
