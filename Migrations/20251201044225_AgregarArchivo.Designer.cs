@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using blazroe.Components.Data;
 
@@ -10,9 +11,11 @@ using blazroe.Components.Data;
 namespace blazroe.Migrations
 {
     [DbContext(typeof(FacturaContexto))]
-    partial class FacturaContextoModelSnapshot : ModelSnapshot
+    [Migration("20251201044225_AgregarArchivo")]
+    partial class AgregarArchivo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "8.0.10");

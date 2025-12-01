@@ -181,15 +181,15 @@
     private int TotalArticulosVendidos = 0;
     private string UltimaVenta = "---";
 
-    protected override async Task OnInitializedAsync()
+    private async Task CargarFacturas()
     {
-       
+      
         facturasGuardadas = await Contexto.Facturas
                                           .Include(f => f.Articulos)
+                                          .Where(f => !f.Archivada) 
                                           .OrderByDescending(f => f.Id)
                                           .ToListAsync();
 
-      
         CalcularEstadisticas();
     }
 

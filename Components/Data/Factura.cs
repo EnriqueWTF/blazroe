@@ -10,4 +10,5 @@ public class Factura
 
     
     public bool Archivada { get; set; } = false; // Por defecto no esta archivada
+
 }
