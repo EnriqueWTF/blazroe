@@ -4,226 +4,367 @@
 @using Microsoft.EntityFrameworkCore
 @inject FacturaContexto Contexto
 @inject NavigationManager NavManager
-@inject IJSRuntime JS
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 
 <style>
+    /* VARIABLES Y ESTILOS GLOBALES */
+    :root {
+        --sidebar-width: 260px;
+        --primary-color: #6366f1;
+        --bg-dark: #0f172a;
+        --card-dark: #1e293b;
+        --text-muted: #94a3b8;
+        --text-light: #f1f5f9;
+    }
+
     body {
         font-family: 'Inter', sans-serif;
-        background-color: #f3f4f6;
+        background-color: var(--bg-dark);
+        margin: 0;
+        overflow: hidden;
+        color: var(--text-light);
     }
 
-    .glass-card {
-        background: white;
-        border: 1px solid rgba(255,255,255,0.5);
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
-        border-radius: 16px;
+    /* LAYOUT */
+    .layout-wrapper {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
     }
 
-    .btn-create {
-        background: linear-gradient(135deg, #111827 0%, #374151 100%);
+    /* SIDEBAR */
+    .sidebar-local {
+        width: var(--sidebar-width);
+        background: var(--card-dark);
+        color: var(--text-muted);
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        flex-shrink: 0;
+        border-right: 1px solid #334155;
+    }
+
+    .brand {
         color: white;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        font-weight: 800;
+        font-size: 1.4rem;
+        margin-bottom: 3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
+    .nav-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: var(--text-muted);
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+    /* CONTENIDO */
+    .main-content-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        background-color: var(--bg-dark);
+    }
+
+    /* TARJETAS */
+    .dark-card {
+        background-color: var(--card-dark);
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+        margin: 0;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+    }
+
+    /* TABLA */
+    .table-dark-custom {
+        color: var(--text-muted);
+        margin-bottom: 0;
+    }
+
+        .table-dark-custom thead th {
+            background-color: #1e293b;
+            border-bottom: 1px solid #334155;
+            color: #fff;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .table-dark-custom tbody td {
+            border-bottom: 1px solid #334155;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            vertical-align: middle;
+        }
+
+        .table-dark-custom tbody tr:hover {
+            background-color: #334155;
+            color: #fff;
+        }
+
+    /* BÓVEDA */
     .vault-panel {
-        background-color: #e5e7eb;
-        border: 2px dashed #9ca3af;
+        background-color: #1e293b;
+        border: 2px dashed #475569;
         border-radius: 15px;
-        transition: all 0.3s;
     }
 
     .vault-open {
-        background-color: #fff;
+        background-color: #1e293b;
         border: 2px solid #ef4444;
     }
 </style>
 
-<div class="container mt-5">
-   
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div><h2 class="fw-bold text-dark mb-0">Dashboard de Ventas</h2><p class="text-muted">Resumen de facturas activas</p></div>
-        <button class="btn btn-create px-4 py-2 rounded-pill" @onclick="IrACrear"><i class="bi bi-plus-lg me-2"></i> Nueva Factura</button>
-    </div>
-
-    @* MÉTRICAS (Solo cuentan lo NO archivado) *@
-    <div class="row g-4 mb-4">
-        <div class="col-md-4"><div class="glass-card p-4 border-start border-4 border-primary"><p class="text-muted small fw-bold">Ingresos Activos</p><h3 class="fw-bolder m-0">@facturasGuardadas.Sum(f => f.Total).ToString("C")</h3></div></div>
-        <div class="col-md-4"><div class="glass-card p-4 border-start border-4 border-success"><p class="text-muted small fw-bold">Facturas Activas</p><h3 class="fw-bolder m-0">@facturasGuardadas.Count</h3></div></div>
-        <div class="col-md-4"><div class="glass-card p-4 border-start border-4 border-warning"><p class="text-muted small fw-bold">Promedio</p><h3 class="fw-bolder m-0">@(facturasGuardadas.Any() ? facturasGuardadas.Average(f => f.Total).ToString("C") : "$0.00")</h3></div></div>
-    </div>
-
-    @* TABLA PRINCIPAL (Activas) *@
-    <div class="glass-card overflow-hidden mb-5">
-        <div class="p-4 border-bottom bg-white"><h5 class="fw-bold m-0">Transacciones Recientes</h5></div>
-        <div class="table-responsive">
-            @if (facturasGuardadas.Any())
-            {
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="bg-light small text-uppercase"><tr><th class="ps-4">ID</th><th>Cliente</th><th>Fecha</th><th class="text-end">Monto</th><th class="text-center pe-4">Acciones</th></tr></thead>
-                    <tbody>
-                        @foreach (var fac in facturasGuardadas)
-                        {
-                            <tr>
-                                <td class="ps-4 text-muted">#@fac.Id.ToString("D4")</td>
-                                <td class="fw-bold">@fac.NombreCliente</td>
-                                <td class="text-muted">@fac.Fecha.ToShortDateString()</td>
-                                <td class="text-end fw-bold text-success">@fac.Total.ToString("C")</td>
-                                <td class="text-center pe-4">
-
-                                    @* Boton Archivar *@
-                                    <button class="btn btn-sm btn-outline-secondary" title="Archivar (Ocultar)" @onclick="() => ArchivarFactura(fac)">
-                                        <i class="bi bi-archive-fill"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-            else
-            {
-
-                <div class="p-5 text-center text-muted">Sin facturas activas.</div>
-            }
+<div class="layout-wrapper">
+    @* SIDEBAR *@
+    <div class="sidebar-local">
+        <div class="brand"><i class="bi bi-grid-1x2-fill" style="color: #6366f1;"></i> FacturaApp</div>
+        <div class="d-flex flex-column">
+            <div class="nav-item active"><i class="bi bi-speedometer2"></i> Dashboard</div>
+            <a class="nav-item" @onclick="IrACrear"><i class="bi bi-receipt-cutoff"></i> Nueva Venta</a>
         </div>
     </div>
 
-    @* --- LA BOVEDA (ZONA SEGURA) --- *@
-    <div class="mt-5 mb-5">
-        <h6 class="text-uppercase text-muted fw-bold small ls-1 mb-3"><i class="bi bi-shield-lock-fill me-2"></i>Zona Restringida</h6>
+    @* CONTENIDO *@
+    <div class="main-content-area">
+        <div class="container-fluid" style="max-width: 1200px;">
 
-        <div class="p-4 @(BovedaAbierta ? "vault-open shadow" : "vault-panel")">
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <div>
+                    <h2 class="fw-bold text-white mb-0">Dashboard</h2>
+                    <p class="text-muted">Resumen financiero</p>
+                </div>
+              
+            </div>
 
-            @if (!BovedaAbierta)
-            {
-                // ESTADO 1: BLOQUEADO
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <h5 class="fw-bold text-secondary m-0">Archivo Muerto</h5>
-                        <p class="small text-muted m-0">Las facturas archivadas están ocultas.</p>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <input type="password" @bind="PasswordInput" class="form-control" placeholder="Contraseña..." style="width: 150px;">
-                        <button class="btn btn-secondary" @onclick="IntentarAbrirBoveda">Desbloquear</button>
+            @* 1. MÉTRICAS PRINCIPALES *@
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="dark-card border-start border-4 border-primary">
+                        <p class="stat-label">Ingresos Totales</p>
+                        <h3 class="stat-value">@facturasGuardadas.Sum(f => f.Total).ToString("C")</h3>
                     </div>
                 </div>
-                @if (ErrorPassword)
-                {
-                    <p class="text-danger small mt-2 fw-bold">Contraseña incorrecta.</p>
-                }
-            }
-            else
-            {
-                // ESTADO 2: ABIERTO (Muestra las archivadas)
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="text-danger fw-bold"><i class="bi bi-unlock-fill me-2"></i>Bóveda Abierta</h5>
-                    <button class="btn btn-sm btn-outline-dark" @onclick="CerrarBoveda">Bloquear de nuevo</button>
+                <div class="col-md-4">
+                    <div class="dark-card border-start border-4 border-success">
+                        <p class="stat-label">Ventas Activas</p>
+                        <h3 class="stat-value text-success">@facturasGuardadas.Count</h3>
+                    </div>
                 </div>
+                <div class="col-md-4">
+                    <div class="dark-card border-start border-4 border-warning">
+                        <p class="stat-label">Ticket Promedio</p>
+                        <h3 class="stat-value text-warning">
+                            @(facturasGuardadas.Any() ? facturasGuardadas.Average(f => f.Total).ToString("C") : "$0.00")
+                        </h3>
+                    </div>
+                </div>
+            </div>
 
-                @if (facturasArchivadas.Any())
-                {
-                    <table class="table table-sm table-bordered bg-white">
-                        <thead class="table-danger"><tr><th>ID</th><th>Cliente</th><th>Total</th><th>Acción</th></tr></thead>
-                        <tbody>
-                            @foreach (var arch in facturasArchivadas)
-                            {
+            @* 2. HIGHLIGHTS (Modificado: Ahora son 3 columnas) *@
+            <h6 class="text-muted fw-bold small text-uppercase mb-3 mt-5"><i class="bi bi-stars text-warning me-2"></i>Insights</h6>
+            <div class="row g-3 mb-5">
+                @* Cambiamos col-md-3 a col-md-4 para que ocupen todo el ancho *@
+                <div class="col-md-4">
+                    <div class="dark-card h-100 py-3">
+                        <div class="d-flex align-items-center mb-1 text-danger">
+                            <i class="bi bi-heart-fill me-2"></i> <small class="fw-bold">TOP PRODUCTO</small>
+                        </div>
+                        <h6 class="fw-bold text-white m-0">@ArticuloMasVendido</h6>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dark-card h-100 py-3">
+                        <div class="d-flex align-items-center mb-1 text-info">
+                            <i class="bi bi-gem me-2"></i> <small class="fw-bold">MÁS CARO</small>
+                        </div>
+                        <h6 class="fw-bold text-white m-0">@ArticuloMasCostoso</h6>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dark-card h-100 py-3">
+                        <div class="d-flex align-items-center mb-1 text-warning">
+                            <i class="bi bi-trophy-fill me-2"></i> <small class="fw-bold">CLIENTE VIP</small>
+                        </div>
+                        <h6 class="fw-bold text-white m-0">@MejorCliente</h6>
+                    </div>
+                </div>
+                @* La cuarta tarjeta de Volumen/Actividad ha sido eliminada *@
+            </div>
+
+            @* 3. TABLA DE TRANSACCIONES *@
+            <div class="dark-card p-0 overflow-hidden mb-5">
+                <div class="p-4 border-bottom border-secondary border-opacity-25">
+                    <h5 class="fw-bold m-0 text-white">Transacciones Recientes</h5>
+                </div>
+                <div class="table-responsive">
+                    @if (facturasGuardadas.Any())
+                    {
+                        <table class="table table-dark-custom w-100">
+                            <thead>
                                 <tr>
-                                    <td>#@arch.Id</td>
-                                    <td>@arch.NombreCliente</td>
-                                    <td>@arch.Total.ToString("C")</td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-success fw-bold" @onclick="() => DesarchivarFactura(arch)">
-                                            <i class="bi bi-arrow-up-circle me-1"></i> Recuperar
-                                        </button>
-                                    </td>
+                                    <th class="ps-4">ID</th>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th class="text-end">Monto</th>
+                                    <th class="text-center pe-4">Acción</th>
                                 </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <p class="text-muted fst-italic">No hay documentos en el archivo muerto.</p>
-                }
-            }
+                            </thead>
+                            <tbody>
+                                @foreach (var fac in facturasGuardadas)
+                                {
+                                    <tr>
+                                        <td class="ps-4 text-muted">#@fac.Id.ToString("D4")</td>
+                                        <td class="fw-bold text-white">
+                                            <div class="d-flex align-items-center">
+                                                <div class="rounded-circle bg-primary bg-opacity-25 text-primary d-flex align-items-center justify-content-center me-2 fw-bold" style="width:30px; height:30px; font-size:0.8rem;">
+                                                    @fac.NombreCliente.Substring(0, 1).ToUpper()
+                                                </div>
+                                                @fac.NombreCliente
+                                            </div>
+                                        </td>
+                                        <td>@fac.Fecha.ToShortDateString()</td>
+                                        <td class="text-end fw-bold text-success">@fac.Total.ToString("C")</td>
+                                        <td class="text-center pe-4">
+                                            <button class="btn btn-sm btn-outline-secondary border-0 text-muted" title="Archivar" @onclick="() => ArchivarFactura(fac)">
+                                                <i class="bi bi-archive-fill"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 mb-3 d-block opacity-25"></i>
+                            No hay facturas activas.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* 4. BÓVEDA (ARCHIVO) *@
+            <div class="mb-5">
+                <div class="p-4 @(BovedaAbierta ? "vault-open" : "vault-panel")">
+                    @if (!BovedaAbierta)
+                    {
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div><h6 class="fw-bold text-secondary m-0">ARCHIVO MUERTO</h6></div>
+                            <div class="d-flex gap-2">
+                                <input type="password" @bind="PasswordInput" class="form-control bg-dark text-white border-secondary" placeholder="PIN" style="width: 100px;">
+                                <button class="btn btn-secondary btn-sm" @onclick="IntentarAbrirBoveda">ABRIR</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-danger fw-bold m-0"><i class="bi bi-unlock-fill me-2"></i>ACCESO CONCEDIDO</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="CerrarBoveda">Cerrar</button>
+                        </div>
+                        @if (facturasArchivadas.Any())
+                        {
+                            <table class="table table-dark table-sm table-bordered border-secondary mb-0">
+                                <thead><tr><th>Cliente</th><th>Total</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var arch in facturasArchivadas)
+                                    {
+                                        <tr>
+                                            <td>@arch.NombreCliente</td>
+                                            <td>@arch.Total.ToString("C")</td>
+                                            <td class="text-center"><button class="btn btn-sm btn-success py-0" @onclick="() => DesarchivarFactura(arch)">Recuperar</button></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <p class="text-muted small m-0">Archivo vacío.</p>
+                        }
+                    }
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
 @code {
     private List<Factura> facturasGuardadas = new List<Factura>();
-    private List<Factura> facturasArchivadas = new List<Factura>(); 
-
+    private List<Factura> facturasArchivadas = new List<Factura>();
     private bool BovedaAbierta = false;
     private string PasswordInput = "";
-    private bool ErrorPassword = false;
-    private const string PASSWORD_SECRETA = "1234"; 
+    private const string PASSWORD_SECRETA = "1234";
 
-    protected override async Task OnInitializedAsync()
-    {
-        await CargarDatos();
-    }
+    // Variables Estadísticas
+    private string ArticuloMasVendido = "---";
+    private string ArticuloMasCostoso = "---";
+    private string MejorCliente = "---";
+    // Nota: Las variables de Volumen y UltimaVenta se eliminaron de la vista, pero las dejo aquí por si las usas luego
+
+    protected override async Task OnInitializedAsync() { await CargarDatos(); }
 
     private async Task CargarDatos()
     {
-     
-        facturasGuardadas = await Contexto.Facturas
-                                          .Include(f => f.Articulos)
-                                          .Where(f => !f.Archivada) 
-                                          .OrderByDescending(f => f.Id)
-                                          .ToListAsync();
+        facturasGuardadas = await Contexto.Facturas.Include(f => f.Articulos).Where(f => !f.Archivada).OrderByDescending(f => f.Id).ToListAsync();
+        if (BovedaAbierta) { facturasArchivadas = await Contexto.Facturas.Include(f => f.Articulos).Where(f => f.Archivada).ToListAsync(); }
+        CalcularEstadisticas();
+    }
 
-       
-        if (BovedaAbierta)
+    private void CalcularEstadisticas()
+    {
+        if (facturasGuardadas.Any())
         {
-            facturasArchivadas = await Contexto.Facturas
-                                              .Include(f => f.Articulos)
-                                              .Where(f => f.Archivada) 
-                                              .ToListAsync();
+            var todos = facturasGuardadas.SelectMany(f => f.Articulos).ToList();
+            if (todos.Any())
+            {
+                ArticuloMasCostoso = todos.OrderByDescending(a => a.Precio).First().Nombre;
+                var popular = todos.GroupBy(a => a.Nombre).OrderByDescending(g => g.Count()).FirstOrDefault();
+                if (popular != null) ArticuloMasVendido = popular.Key;
+            }
+            var topC = facturasGuardadas.GroupBy(f => f.NombreCliente).OrderByDescending(g => g.Count()).FirstOrDefault();
+            if (topC != null) MejorCliente = topC.Key;
         }
     }
 
-    
-    private async Task ArchivarFactura(Factura f)
-    {
-        f.Archivada = true;
-        await Contexto.SaveChangesAsync();
-        await CargarDatos(); 
-    }
-
-
-    private async Task DesarchivarFactura(Factura f)
-    {
-        f.Archivada = false;
-        await Contexto.SaveChangesAsync();
-        await CargarDatos(); 
-    }
-
-   
-    private async Task IntentarAbrirBoveda()
-    {
-        if (PasswordInput == PASSWORD_SECRETA)
-        {
-            BovedaAbierta = true;
-            ErrorPassword = false;
-            PasswordInput = ""; 
-            await CargarDatos(); 
-        }
-        else
-        {
-            ErrorPassword = true;
-        }
-    }
-
-    private void CerrarBoveda()
-    {
-        BovedaAbierta = false;
-        facturasArchivadas.Clear(); 
-    }
-
+    private async Task ArchivarFactura(Factura f) { f.Archivada = true; await Contexto.SaveChangesAsync(); await CargarDatos(); }
+    private async Task DesarchivarFactura(Factura f) { f.Archivada = false; await Contexto.SaveChangesAsync(); await CargarDatos(); }
+    private async Task IntentarAbrirBoveda() { if (PasswordInput == PASSWORD_SECRETA) { BovedaAbierta = true; PasswordInput = ""; await CargarDatos(); } }
+    private void CerrarBoveda() { BovedaAbierta = false; facturasArchivadas.Clear(); }
     private void IrACrear() { NavManager.NavigateTo("/Factura"); }
 }

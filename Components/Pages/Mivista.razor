@@ -5,187 +5,256 @@
 @inject FacturaContexto Contexto
 @inject NavigationManager NavManager
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <style>
-    .editor-panel {
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-        padding: 2rem;
-        height: 100%;
+  
+    :root {
+        --sidebar-width: 260px;
+        --primary-color: #6366f1;
+        --bg-dark: #0f172a;
+        --panel-dark: #1e293b;
     }
 
-  
+    body {
+        margin: 0;
+        font-family: 'Inter', sans-serif;
+        background-color: var(--bg-dark);
+        overflow: hidden;
+        color: #fff;
+    }
+
+    .layout-wrapper {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+    }
+
+    
+    .sidebar-local {
+        width: var(--sidebar-width);
+        background: #1e293b;
+        color: #94a3b8;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem;
+        flex-shrink: 0;
+        border-right: 1px solid #334155;
+    }
+
+    .brand {
+        color: white;
+        font-weight: 800;
+        font-size: 1.4rem;
+        margin-bottom: 3rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .nav-item {
+        display: flex;
+        align-items: center;
+        padding: 12px 18px;
+        border-radius: 12px;
+        color: #94a3b8;
+        text-decoration: none;
+        margin-bottom: 0.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: var(--primary-color);
+        }
+
+   
+    .main-content-area {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 2rem;
+        background-color: var(--bg-dark);
+    }
+
+    .text-header {
+        color: #f1f5f9;
+    }
+
+
+   
+    .editor-panel {
+        background: var(--panel-dark); 
+        border: 1px solid #334155;
+        border-radius: 20px;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); 
+        padding: 2rem;
+        color: white;
+    }
+
+   
+    .form-modern {
+        background-color: #0f172a; 
+        border: 1px solid #334155;
+        color: #e2e8f0; 
+        padding: 12px 15px;
+        border-radius: 10px;
+        width: 100%;
+    }
+
+        .form-modern::placeholder {
+            color: #64748b;
+        }
+        
+
+        .form-modern:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background-color: #0f172a;
+            color: white;
+        }
+
+    .label-custom {
+        color: #94a3b8; 
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin-bottom: 6px;
+        display: block;
+    }
+
+
     .receipt-preview {
         background: #fff;
         border: 1px solid #e5e7eb;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        font-family: 'Space Mono', monospace; 
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+        font-family: 'Space Mono', monospace;
         padding: 2rem;
         position: relative;
-        border-radius: 5px;
+        color: #000; 
     }
 
-        .receipt-preview::before, .receipt-preview::after {
+        .receipt-preview::before {
             content: "";
             position: absolute;
+            top: -10px;
             left: 0;
             width: 100%;
             height: 10px;
+            background: linear-gradient(135deg, #fff 10px, transparent 0), linear-gradient(-135deg, #fff 10px, transparent 0);
             background-size: 20px 20px;
-        }
-
-        .receipt-preview::before {
-            top: -10px;
-            background-image: linear-gradient(135deg, #fff 10px, transparent 0), linear-gradient(-135deg, #fff 10px, transparent 0);
-        }
-
-        .receipt-preview::after {
-            bottom: -10px;
-            background-image: linear-gradient(135deg, transparent 10px, #fff 0), linear-gradient(-135deg, transparent 10px, #fff 0);
-            background-position: bottom;
-        }
-
-    .form-control-modern {
-        background-color: #f3f4f6;
-        border: none;
-        padding: 12px 15px;
-        border-radius: 10px;
-        font-weight: 500;
-    }
-
-        .form-control-modern:focus {
-            background-color: #fff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            outline: none;
         }
 </style>
 
-<div class="container mt-4">
-  
-    <div class="mb-4">
-        <button class="btn btn-link text-decoration-none text-muted p-0" @onclick="IrAHistorial">
-            <i class="bi bi-arrow-left me-1"></i> Volver al Historial
-        </button>
+<div class="layout-wrapper">
+
+    <div class="sidebar-local">
+        <div class="brand"><i class="bi bi-grid-1x2-fill" style="color: #6366f1;"></i> FacturaApp</div>
+        <div class="d-flex flex-column">
+            <a class="nav-item" @onclick="IrAHistorial"><i class="bi bi-speedometer2"></i> Facturas</a>
+            <div class="nav-item active"><i class="bi bi-receipt-cutoff"></i> Nueva Venta</div>
+        </div>
     </div>
 
-    <div class="row align-items-start">
 
-    
-        <div class="col-lg-5 mb-4">
-            <div class="editor-panel">
-                <h3 class="fw-bolder text-dark mb-4">Nueva Venta</h3>
+    <div class="main-content-area">
+        <div class="container-fluid" style="max-width: 1200px;">
 
-        
-                <div class="mb-4">
-                    <label class="text-uppercase small text-muted fw-bold mb-2">Cliente</label>
-                    <input @bind="facturaActual.NombreCliente" class="form-control form-control-modern" placeholder="Nombre del cliente..." />
-                </div>
-
-      
-                <div class="mb-4">
-                   <label class="text-uppercase small text-muted fw-bold mb-2">Fecha</label>
-                    <input type="date" @bind="facturaActual.Fecha" class="form-control form-control-modern" />
-                </div>
-
-                <hr class="my-4 opacity-25">
-
-           
-                <h5 class="fw-bold mb-3">Agregar Producto</h5>
-                <div class="row g-2 mb-3">
-                    <div class="col-8">
-                        <input @bind="articuloActual.Nombre" class="form-control form-control-modern" placeholder="Descripción..." />
-                    </div>
-                    <div class="col-4">
-                     <div class="input-group">
-                      <span class="input-group-text border-0 bg-light fw-bold">$</span>
-                     <input type="number" @bind="articuloActual.Precio" class="form-control form-control-modern" placeholder="0" />
-                     </div>
-                    </div>
-                </div>
-
-                <button class="btn btn-dark w-100 py-2 rounded-3 fw-bold shadow-sm" @onclick="AgregarArticulo">
-                    <i class="bi bi-plus-circle me-2"></i> Agregar Ítem
-                </button>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold text-header m-0">Crear Factura</h3>
+               
             </div>
-        </div>
 
-     
-        <div class="col-lg-7">
-         
-            <div class="receipt-preview mx-auto" style="max-width: 480px;">
+            <div class="row">
+             
+                <div class="col-lg-5 mb-4">
+                    <div class="editor-panel">
+                        <h5 class="fw-bold mb-4 text-white"><i class="bi bi-pencil-square me-2 text-primary"></i>Datos de Venta</h5>
 
-              
-                <div class="text-center mb-4">
-                    <div class="mb-2">
-                        <i class="bi bi-shop fs-1 text-dark"></i>
+                        <div class="mb-3">
+                            <label class="label-custom">CLIENTE</label>
+                            <input @bind="facturaActual.NombreCliente" class="form-modern" placeholder="Nombre completo..." />
+                        </div>
+                        <div class="mb-4">
+                            <label class="label-custom">FECHA DE EMISIÓN</label>
+                            <input type="date" @bind="facturaActual.Fecha" class="form-modern" style="color-scheme: dark;" />
+                          
+                        </div>
+
+                        <hr class="border-secondary opacity-25 my-4">
+
+                        <h6 class="fw-bold mb-3 text-white">Agregar Productos</h6>
+                        <div class="row g-2">
+                            <div class="col-8">
+                                <input @bind="articuloActual.Nombre" class="form-modern" placeholder="Descripción del ítem" />
+                            </div>
+                            <div class="col-4">
+                                <input type="number" @bind="articuloActual.Precio" class="form-modern" placeholder="$0.00" />
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100 mt-4 fw-bold py-3 shadow-lg"
+                                style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border:none;"
+                                @onclick="AgregarArticulo">
+                            <i class="bi bi-plus-lg me-2"></i> AGREGAR
+                        </button>
                     </div>
-                    <h4 class="fw-bold text-uppercase m-0">Mi Negocio S.A.</h4>
-                    <p class="small text-muted m-0">RFC: GEN010101ABC</p>
-                    <p class="small text-muted">Los Mochis, Sinaloa</p>
                 </div>
 
-                <div class="border-top border-bottom py-2 my-3 border-dark border-opacity-25 d-flex justify-content-between small">
-                    <span>FECHA: @facturaActual.Fecha.ToShortDateString()</span>
-                    <span>CTE: @(string.IsNullOrEmpty(facturaActual.NombreCliente) ? "---" : facturaActual.NombreCliente)</span>
-                </div>
+             
+                <div class="col-lg-7">
+                    <div class="receipt-preview mx-auto" style="max-width: 450px;">
+                        <div class="text-center mb-4">
+                            <i class="bi bi-shop fs-1 text-dark"></i>
+                            <h4 class="fw-bold m-0 mt-2 text-dark">MI NEGOCIO S.A.</h4>
+                            <p class="small text-muted">Ticket de Venta</p>
+                        </div>
 
-      
-                <table class="table table-borderless table-sm small mb-4">
-                    <thead>
-                        <tr class="border-bottom border-dark">
-                            <th>DESC</th>
-                            <th class="text-end">IMPORTE</th>
-                            <th class="text-end" style="width: 30px;"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (facturaActual.Articulos.Any())
-                        {
-                            foreach (var item in facturaActual.Articulos)
-                            {
+                        <div class="d-flex justify-content-between border-top border-bottom py-2 small text-dark">
+                            <span>@facturaActual.Fecha.ToShortDateString()</span>
+                            <span>@(string.IsNullOrEmpty(facturaActual.NombreCliente) ? "---" : facturaActual.NombreCliente)</span>
+                        </div>
+
+                        <table class="table table-borderless table-sm small mt-3 mb-4 text-dark">
+                            <tbody>
+                                @foreach (var item in facturaActual.Articulos)
+                                {
+                                    <tr>
+                                        <td>@item.Nombre</td>
+                                        <td class="text-end">@item.Precio.ToString("N2")</td>
+                                        <td class="text-end" style="width:20px;">
+                                            <a href="javascript:void(0)" class="text-danger fw-bold text-decoration-none" @onclick="() => EliminarArticulo(item)">✕</a>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!facturaActual.Articulos.Any())
+                                {
+                                    <tr><td colspan="3" class="text-center text-muted fst-italic py-3">- Carrito Vacío -</td></tr>
+                                }
+                            </tbody>
+                            <tfoot class="border-top border-dark fw-bold fs-5">
                                 <tr>
-                                    <td class="text-uppercase">@item.Nombre</td>
-                                    <td class="text-end">@item.Precio.ToString("N2")</td>
-                                    <td class="text-end">
-                                  
-                                        <a href="javascript:void(0)" class="text-danger text-decoration-none fw-bold" @onclick="() => EliminarArticulo(item)">x</a>
-                                    </td>
+                                    <td class="pt-3">TOTAL</td>
+                                    <td class="text-end pt-3">@facturaActual.Total.ToString("C")</td>
+                                    <td></td>
                                 </tr>
-                            }
+                            </tfoot>
+                        </table>
+
+                        @if (facturaActual.Articulos.Any() && !string.IsNullOrWhiteSpace(facturaActual.NombreCliente))
+                        {
+                            <button class="btn btn-dark w-100 rounded-0 fw-bold py-3 shadow" @onclick="GuardarFactura">
+                                <i class="bi bi-printer-fill me-2"></i> IMPRIMIR Y GUARDAR
+                            </button>
                         }
                         else
                         {
-                            <tr><td colspan="3" class="text-center text-muted fst-italic py-4">- Carrito Vacío -</td></tr>
+                            <div class="alert alert-secondary bg-opacity-25 text-center border-0 small text-muted">
+                                Complete los datos para generar factura
+                            </div>
                         }
-                    </tbody>
-                    <tfoot class="border-top border-dark fw-bold">
-                        <tr>
-                            <td class="pt-3 fs-5">TOTAL</td>
-                            <td class="text-end pt-3 fs-4">@facturaActual.Total.ToString("C")</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-
-              
-                <div class="text-center mt-5">
-                    @if (facturaActual.Articulos.Any() && !string.IsNullOrWhiteSpace(facturaActual.NombreCliente))
-                    {
-                        <button class="btn btn-primary w-100 py-3 rounded-0 text-uppercase fw-bold ls-1 shadow" @onclick="GuardarFactura">
-                            <i class="bi bi-printer-fill me-2"></i> Confirmar y Guardar
-                        </button>
-                    }
-                    else
-                    {
-                        <button class="btn btn-secondary w-100 py-3 rounded-0 text-uppercase fw-bold opacity-50" disabled>
-                            Complete los datos
-                        </button>
-                    }
-                    <p class="mt-3 small text-muted mb-0">Gracias por su compra</p>
-                    <p class="small text-muted">*** COPIA CLIENTE ***</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -201,33 +270,16 @@
         if (!string.IsNullOrWhiteSpace(articuloActual.Nombre) && articuloActual.Precio > 0)
         {
             facturaActual.Articulos.Add(articuloActual);
-            articuloActual = new Articulo(); 
+            articuloActual = new Articulo();
         }
     }
-
-    private void EliminarArticulo(Articulo item)
-    {
-        facturaActual.Articulos.Remove(item);
-    }
-
+    private void EliminarArticulo(Articulo item) { facturaActual.Articulos.Remove(item); }
     private async Task GuardarFactura()
     {
         if (!string.IsNullOrWhiteSpace(facturaActual.NombreCliente) && facturaActual.Articulos.Any())
         {
-         
-            Contexto.Facturas.Add(facturaActual);
-            await Contexto.SaveChangesAsync();
-
-
-            facturaActual = new Factura();
-
-     
-            NavManager.NavigateTo("/historial");
+            Contexto.Facturas.Add(facturaActual); await Contexto.SaveChangesAsync(); NavManager.NavigateTo("/historial");
         }
     }
-
-    private void IrAHistorial()
-    {
-        NavManager.NavigateTo("/historial");
-    }
+    private void IrAHistorial() { NavManager.NavigateTo("/historial"); }
 }
